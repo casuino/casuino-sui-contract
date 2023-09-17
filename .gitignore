@@ -1,0 +1,6 @@
+build
+
+# Ignore intellij files
+**/.idea
+
+.DS_Store
