@@ -26,6 +26,8 @@ module casuino::chipsui {
 
     struct CHIPSUI has drop {}
 
+    const ELiquidPoolNotFound: u64 = 1;
+
     fun init(witness: CHIPSUI, ctx: &mut TxContext) {
         let (treasury_cap, metadata) = coin::create_currency<CHIPSUI>(witness, 2, b"CHIPSUI", b"CHIPSUI", b"CHIPSUI", option::none(), ctx);
         transfer::public_freeze_object(metadata);
@@ -53,15 +55,14 @@ module casuino::chipsui {
     public entry fun withdrawStakedSui(exchange: &mut Exchange, coin: Coin<CHIPSUI>, ctx: &mut TxContext) {
         let sender = tx_context::sender(ctx);
         let index = index_of_ls(&exchange.liquid_pools, coin::value(&coin), sender);
-        if (index == vector::length(&exchange.liquid_pools)) {
-            transfer::public_transfer(coin, sender);
-        } else {
-            let LiquidPool { id, owner, staked_sui, amount, expired } = vector::remove(&mut exchange.liquid_pools, index);
-            // If the input value is larger than amount here, it would be good to add logic to take it some times and return some of it.
-            transfer::public_transfer(staked_sui, owner);
-            coin::burn(&mut exchange.treasury_cap, coin);
-            object::delete(id);
-        }
+        assert!(index < vector::length(&exchange.liquid_pools), ELiquidPoolNotFound);
+       
+        let LiquidPool { id, owner, staked_sui, amount, expired } = vector::remove(&mut exchange.liquid_pools, index);
+        // If the input value is larger than amount here, it would be good to add logic to take it some times and return some of it.
+        transfer::public_transfer(staked_sui, owner);
+        coin::burn(&mut exchange.treasury_cap, coin);
+        object::delete(id);
+       
     }
 
     fun index_of_ls(ls: &vector<LiquidPool>, amount: u64, sender: address): u64 {
