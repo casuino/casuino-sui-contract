@@ -8,6 +8,8 @@ module casuino::blackjack {
   use std::vector;
   use sui::dynamic_object_field;
 
+  use casuino::chipsui::CHIPSUI;
+
   // game object which can create game table
   struct GameInfo has key {
     id: UID,
@@ -278,7 +280,7 @@ module casuino::blackjack {
   // player action from FE
   // transfer player hand to game table and bet some money
   // TODO : if player already had player's own hand, use the hand for player hand (recycle hand)
-  public entry fun ready_game(game: &GameInfo, game_table: &mut GameTable, money: Coin<SUI>, ctx: &mut TxContext) {
+  public entry fun ready_game(game: &GameInfo, game_table: &mut GameTable, money: Coin<CHIPSUI>, ctx: &mut TxContext) {
     // check game id
     check_game_id(game, game_table.game_id);
 
@@ -299,7 +301,7 @@ module casuino::blackjack {
     game_table.player_address = option::some(sender);
   }
 
-  fun bet_player_money(game_table: &mut GameTable, money: Coin<SUI>) {
+  fun bet_player_money(game_table: &mut GameTable, money: Coin<CHIPSUI>) {
     let money_box = dynamic_object_field::borrow_mut<vector<u8>,MoneyBox>(&mut game_table.id, b"money_box");
     let money_id = object::id(&money);
     money_box.player_bet = option::some(money_id);
@@ -331,7 +333,7 @@ module casuino::blackjack {
     game_table.player_address = option::none();
 
     let money_box = dynamic_object_field::borrow_mut<vector<u8>, MoneyBox> (&mut game_table.id, b"money_box");
-    let bet_money = dynamic_object_field::remove<vector<u8>, Coin<SUI>> (&mut money_box.id, b"player_money");
+    let bet_money = dynamic_object_field::remove<vector<u8>, Coin<CHIPSUI>> (&mut money_box.id, b"player_money");
     transfer::public_transfer(bet_money, sender);
     money_box.player_bet = option::none();
 
@@ -339,7 +341,7 @@ module casuino::blackjack {
   }
 
   // dealer action from BE 
-  public entry fun start_game(game_table: &mut GameTable, money: Coin<SUI>, player_address: address,  ctx: &mut TxContext) {
+  public entry fun start_game(game_table: &mut GameTable, money: Coin<CHIPSUI>, player_address: address,  ctx: &mut TxContext) {
     // check if game is ready
     assert!(game_table.is_playing == GAME_READY_STATE, 403);
     // check whether player address in the game table is equal to player address from parameter
@@ -365,7 +367,7 @@ module casuino::blackjack {
     // player_hand.is_my_turn = true;
   }
 
-  fun bet_dealer_money(game_table: &mut GameTable, money: Coin<SUI>) {
+  fun bet_dealer_money(game_table: &mut GameTable, money: Coin<CHIPSUI>) {
     let money_box = dynamic_object_field::borrow_mut<vector<u8>,MoneyBox>(&mut game_table.id, b"money_box");
     let money_id = object::id(&money);
 
@@ -575,9 +577,9 @@ module casuino::blackjack {
     };
     player_hand.total_card_numbers = 0;
 
-    let player_money = dynamic_object_field::remove<vector<u8>, Coin<SUI>> (&mut money_box.id, b"player_money");
+    let player_money = dynamic_object_field::remove<vector<u8>, Coin<CHIPSUI>> (&mut money_box.id, b"player_money");
     money_box.player_bet = option::none();
-    let dealer_money = dynamic_object_field::remove<vector<u8>, Coin<SUI>> (&mut money_box.id, b"dealer_money");
+    let dealer_money = dynamic_object_field::remove<vector<u8>, Coin<CHIPSUI>> (&mut money_box.id, b"dealer_money");
     money_box.dealer_bet = option::none();
     let player_address = option::extract(&mut game_table.player_address);
     let dealer_address = game_table.dealer_address;
