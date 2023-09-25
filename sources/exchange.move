@@ -76,17 +76,21 @@ module casuino::chipsui {
         let LiquidPool { id, owner, staked_sui, amount, expired } = vector::remove(&mut exchange.liquid_pools, index);
         let input_amount = coin::value(&coin);
         if (amount > input_amount) {
-            let remain_staked_sui = staking_pool::split(&mut staked_sui, input_amount, ctx);
+            let withdraw_staked_sui = staking_pool::split(&mut staked_sui, input_amount, ctx);
+            transfer::public_transfer(withdraw_staked_sui, owner);
+
             let ls = LiquidPool {
                 id: object::new(ctx),
-                owner: sender,
-                staked_sui: remain_staked_sui,
+                owner: owner,
+                staked_sui: staked_sui,
                 amount: amount - input_amount,
                 expired: 0,
             };
             vector::push_back(&mut exchange.liquid_pools, ls);
+        }  else {
+            transfer::public_transfer(staked_sui, owner);
         };
-        transfer::public_transfer(staked_sui, owner);
+        
         coin::burn(&mut exchange.treasury_cap, coin);
         object::delete(id);   
     }
